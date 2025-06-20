@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+{% block content %}
+  <div class="upload-container">
+    <h2>Yeni Medya Yükle</h2>
+    <form method="post" enctype="multipart/form-data" class="upload-form">
+      {% csrf_token %}
+      {% if form.errors and request.method == 'POST' %}
+        <div class="alert">
+          <ul>
+            {% for field in form %}
+              {% for error in field.errors %}
+                <li>{{ field.label }}: {{ error }}</li>
+              {% endfor %}
+            {% endfor %}
+            {% for error in form.non_field_errors %}
+              <li>{{ error }}</li>
+            {% endfor %}
+          </ul>
+        </div>
+      {% endif %}
+      <div class="form-group">
+        {{ form.title.label_tag }}
+        {{ form.title }}
+      </div>
+      <div class="form-group">
+        {{ form.media_type.label_tag }}
+        {{ form.media_type }}
+      </div>
+      <div class="form-group">
+        <label for="id_file">Fotoğraf / Video</label>
+        <input type="file" id="id_file" name="file" multiple required>
+        <small style="color:#666; font-size:0.97em;">Birden fazla fotoğraf veya video seçmek için Ctrl (veya mobilde çoklu seçim) kullanabilirsin.</small>
+      </div>
+      <button type="submit">Yükle</button>
+    </form>
+    <a href="{% url 'media_list' %}" class="back-link">Geri Dön</a>
+  </div>
+  {% if show_thanks %}
+    <div id="thanks-modal" class="thanks-modal">
+      <div class="thanks-modal-content">
+        <span class="thanks-text">Bu unutulmaz günümüzde yanımızda olup anımızı ölümsüzleştirdiğin için sonsuz teşekkürler! 🥳✨</span>
+      </div>
+    </div>
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        var modal = document.getElementById('thanks-modal');
+        if (modal) {
+          modal.style.display = 'flex';
+          setTimeout(function() {
+            modal.style.display = 'none';
+            {% if redirect_to_gallery %}
+            window.location.href = "{% url 'gallery' %}";
+            {% endif %}
+          }, 3000);
+        }
+      });
+    </script>
+    <style>
+      .thanks-modal {
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.4);
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        animation: fadeIn 0.3s;
+      }
+      .thanks-modal-content {
+        background: #fff;
+        padding: 32px 36px;
+        border-radius: 16px;
+        box-shadow: 0 4px 32px #b6e2c7;
+        text-align: center;
+        font-size: 1.3em;
+        color: #14532d;
+        font-weight: bold;
+        max-width: 90vw;
+        animation: popIn 0.3s;
+      }
+      .thanks-text {
+        display: block;
+        font-family: 'Poppins', cursive;
+      }
+      @keyframes fadeIn {
+        from { opacity: 0; } to { opacity: 1; }
+      }
+      @keyframes popIn {
+        from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; }
+      }
+    </style>
+  {% endif %}
+  <style>
+    .upload-container { max-width: 400px; margin: 40px auto; background: #fff; padding: 32px 28px 22px 28px; border-radius: 12px; box-shadow: 0 2px 16px #e0cfc7; }
+    .upload-container h2 { text-align: center; margin-bottom: 24px; }
+    .upload-form .form-group { margin-bottom: 18px; }
+    .upload-form label { display: block; margin-bottom: 6px; color: #14532d; font-weight: bold; }
+    .upload-form input, .upload-form select { width: 100%; padding: 10px; border: 1px solid #e0cfc7; border-radius: 5px; font-size: 16px; }
+    .upload-form button { width: 100%; margin-top: 10px; }
+    .alert { background: #ffeaea; color: #b04848; border: 1px solid #f5c2c2; border-radius: 6px; padding: 10px 16px; margin-bottom: 18px; }
+    .alert ul { margin: 0; padding-left: 18px; }
+    .back-link { display: block; margin-top: 18px; color: #888; text-align: center; text-decoration: underline; }
+    @media (max-width: 600px) {
+      .upload-container { padding: 16px 4vw; }
+    }
+  </style>
+{% endblock %} 

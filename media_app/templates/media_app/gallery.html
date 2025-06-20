@@ -1,0 +1,419 @@
+{% extends 'base.html' %}
+{% block content %}
+  <h2 class="gallery-main-title">Bir Ömürden İlk Sayfa</h2>
+  {% if messages %}
+    {% for message in messages %}
+      <div class="success-message">{{ message }}</div>
+    {% endfor %}
+  {% endif %}
+  <div class="gallery-grid">
+    {% for batch in gallery_batches %}
+      <div class="media-card">
+        <div class="slider-container">
+          <div class="slider" id="slider-{{ forloop.counter }}">
+            {% for item in batch %}
+              <div class="slide">
+                {% if item.media_type == 'image' %}
+                  <img src="{{ item.file.url }}" alt="{{ item.title }}" loading="lazy" data-src="{{ item.file.url }}" />
+                {% elif item.media_type == 'video' %}
+                  <video controls>
+                    <source src="{{ item.file.url }}" type="video/mp4">
+                    Tarayıcınız video etiketini desteklemiyor.
+                  </video>
+                {% endif %}
+              </div>
+            {% endfor %}
+          </div>
+          {% if batch|length > 1 %}
+            <button class="slider-btn prev" onclick="moveSlide({{ forloop.counter }}, -1)">
+              <svg viewBox="0 0 24 24" width="24" height="24">
+                <path fill="currentColor" d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
+              </svg>
+            </button>
+            <button class="slider-btn next" onclick="moveSlide({{ forloop.counter }}, 1)">
+              <svg viewBox="0 0 24 24" width="24" height="24">
+                <path fill="currentColor" d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/>
+              </svg>
+            </button>
+            <div class="slider-dots" id="dots-{{ forloop.counter }}">
+              {% for item in batch %}
+                <button class="dot{% if forloop.first %} active{% endif %}" onclick="goToSlide({{ forloop.parentloop.counter }}, {{ forloop.counter0 }})"></button>
+              {% endfor %}
+            </div>
+          {% endif %}
+        </div>
+        <div class="media-info">
+          <div class="media-title">📝 {{ batch.0.title }}</div>
+          <div class="media-user">
+            👤 <a href="{% url 'user_gallery' batch.0.user.id %}" style="color:#14532d; text-decoration:underline;">{{ batch.0.user.username }}</a>
+          </div>
+          <div class="media-date" style="color: #666; font-size: 0.97em;">
+            📅 {{ batch.0.uploaded_at|date:'d.m.Y' }} | {{ batch.0.uploaded_at|date:'H:i' }}
+          </div>
+          {% if user == batch.0.user %}
+            <div class="media-actions actions-row full-width-row">
+              <a href="{% url 'media_edit' batch.0.id %}" class="edit-btn action-btn">Düzenle</a>
+              <form action="{% url 'media_delete' batch.0.id %}" method="post" onsubmit="return confirm('Bu medyayı silmek istediğinize emin misiniz?');" style="display: contents;">
+                {% csrf_token %}
+                <button type="submit" class="delete-btn action-btn">Sil</button>
+              </form>
+              {% if user.is_superuser %}
+                <a href="{% url 'download_user_media' batch.0.user.id %}" class="download-btn action-btn">İndir</a>
+              {% endif %}
+            </div>
+          {% endif %}
+
+        </div>
+      </div>
+    {% empty %}
+      <div class="no-media">Henüz medya yüklenmedi.</div>
+    {% endfor %}
+  </div>
+
+  <!-- Sayfalama Navigasyonu -->
+  {% if page_obj.has_other_pages %}
+    <div class="pagination">
+      {% if page_obj.has_previous %}
+        <a href="?page=1" class="page-link">« İlk</a>
+        <a href="?page={{ page_obj.previous_page_number }}" class="page-link">‹ Önceki</a>
+      {% endif %}
+
+      <span class="page-info">
+        Sayfa {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
+      </span>
+
+      {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}" class="page-link">Sonraki ›</a>
+        <a href="?page={{ page_obj.paginator.num_pages }}" class="page-link">Son »</a>
+      {% endif %}
+    </div>
+  {% endif %}
+
+  <style>
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 28px;
+      margin-top: 32px;
+    }
+    .media-card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 12px #e0cfc7;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      min-height: 460px;
+    }
+    .slider-container {
+      position: relative;
+      width: 100%;
+      height: 320px;
+      background: #f3f3f3;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    .slider {
+      display: flex;
+      transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+      width: 100%;
+      height: 320px;
+    }
+    .slide {
+      min-width: 100%;
+      height: 320px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .slide img, .slide video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      background: #f3f3f3;
+    }
+    .slider-btn {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      background: rgba(20,83,45,0.8);
+      color: #fff;
+      border: none;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      cursor: pointer;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: all 0.3s ease;
+    }
+    .slider-container:hover .slider-btn {
+      opacity: 1;
+    }
+    .slider-btn:hover {
+      background: rgba(20,83,45,1);
+      transform: translateY(-50%) scale(1.1);
+    }
+    .slider-btn.prev { left: 12px; }
+    .slider-btn.next { right: 12px; }
+    .slider-btn svg {
+      width: 24px;
+      height: 24px;
+    }
+    .slider-dots {
+      position: absolute;
+      bottom: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 8px;
+      z-index: 2;
+    }
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.5);
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    .dot.active {
+      background: #fff;
+      transform: scale(1.2);
+    }
+    .media-info {
+      padding: 16px 18px 12px 18px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+    }
+    .media-title {
+      font-size: 1.1em;
+      font-weight: bold;
+      color: #14532d;
+      margin-top: 0;
+      margin-bottom: 8px;
+      word-break: break-word;
+    }
+    .media-meta {
+      font-size: 0.97em;
+      color: #666;
+      margin-bottom: 10px;
+    }
+    .media-actions {
+      display: flex;
+      gap: 10px;
+    }
+    .edit-btn, .delete-btn {
+      padding: 6px 14px;
+      border-radius: 5px;
+      font-size: 0.97em;
+      font-weight: bold;
+      border: none;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background 0.15s;
+    }
+    .edit-btn {
+      background: #e0f2e9;
+      color: #14532d;
+      border: 1px solid #14532d;
+    }
+    .edit-btn:hover {
+      background: #b6e2c7;
+    }
+    .delete-btn {
+      background: #ffeaea;
+      color: #b04848;
+      border: 1px solid #b04848;
+    }
+    .delete-btn:hover {
+      background: #f5c2c2;
+    }
+    .no-media {
+      grid-column: 1/-1;
+      text-align: center;
+      color: #888;
+      font-size: 1.1em;
+      margin-top: 40px;
+    }
+    .success-message {
+      background: #e0f2e9;
+      color: #14532d;
+      border: 1px solid #b6e2c7;
+      border-radius: 6px;
+      padding: 12px 18px;
+      margin-bottom: 18px;
+      text-align: center;
+      font-weight: 600;
+      font-size: 1.08em;
+    }
+    
+    /* Sayfalama Stilleri */
+    .pagination {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 12px;
+      margin-top: 40px;
+      padding: 20px;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 12px #e0cfc7;
+    }
+    .page-link {
+      padding: 8px 16px;
+      background: var(--main-green);
+      color: white;
+      text-decoration: none;
+      border-radius: 6px;
+      font-weight: 500;
+      transition: opacity 0.2s;
+    }
+    .page-link:hover {
+      opacity: 0.8;
+      color: white;
+      text-decoration: none;
+    }
+    .page-info {
+      padding: 8px 16px;
+      background: #f8f8f8;
+      border-radius: 6px;
+      font-weight: 500;
+      color: #666;
+    }
+    .media-actions.full-width-row {
+      display: flex;
+      gap: 8px;
+      width: 100%;
+      margin-top: 8px;
+    }
+    .action-btn {
+      flex: 1 1 0;
+      width: 100%;
+      margin: 0;
+      border-radius: 5px;
+      box-sizing: border-box;
+      padding: 10px 0;
+      font-size: 1em;
+      font-weight: bold;
+      text-align: center;
+      transition: background 0.15s;
+      display: block;
+    }
+    .edit-btn.action-btn {
+      background: #e0f2e9;
+      color: #14532d;
+      border: 1px solid #14532d;
+    }
+    .edit-btn.action-btn:hover {
+      background: #b6e2c7;
+    }
+    .delete-btn.action-btn {
+      background: #ffeaea;
+      color: #b04848;
+      border: 1px solid #b04848;
+    }
+    .delete-btn.action-btn:hover {
+      background: #f5c2c2;
+    }
+    .download-btn.action-btn {
+      background: #e0e7ff;
+      color: #1e40af;
+      border: 1px solid #1e40af;
+    }
+    .download-btn.action-btn:hover {
+      background: #c7d2fe;
+      color: #1e40af;
+      text-decoration: none;
+    }
+    @media (max-width: 600px) {
+      .media-actions.full-width-row {
+        flex-direction: column;
+        gap: 12px;
+      }
+      .action-btn {
+        width: 100%;
+        min-width: 0;
+      }
+    }
+    .media-user {
+      margin-top: 0;
+      margin-bottom: 8px;
+    }
+    .media-date {
+      margin-top: 0;
+      margin-bottom: 0;
+    }
+    .gallery-main-title {
+      text-align: center;
+      color: #14532d;
+      font-family: 'Imperial Script', cursive;
+      font-size: 2.5em;
+      margin-top: 10px;
+      margin-bottom: 18px;
+      letter-spacing: 1px;
+    }
+  </style>
+  <script>
+    const sliderStates = {};
+    
+    // Lazy Loading için Intersection Observer
+    const imageObserver = new IntersectionObserver((entries, observer) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const img = entry.target;
+          img.src = img.dataset.src;
+          img.classList.remove('lazy');
+          observer.unobserve(img);
+        }
+      });
+    });
+
+    // Lazy loading için img elementlerini gözlemle
+    document.addEventListener('DOMContentLoaded', function() {
+      const lazyImages = document.querySelectorAll('img[data-src]');
+      lazyImages.forEach(img => imageObserver.observe(img));
+    });
+    
+    function updateDots(idx, slideIndex) {
+      const dots = document.querySelectorAll(`#dots-${idx} .dot`);
+      dots.forEach((dot, i) => {
+        dot.classList.toggle('active', i === slideIndex);
+      });
+    }
+    
+    function moveSlide(idx, dir) {
+      const slider = document.getElementById('slider-' + idx);
+      if (!slider) return;
+      
+      if (!(idx in sliderStates)) sliderStates[idx] = 0;
+      const slides = slider.children.length;
+      
+      sliderStates[idx] += dir;
+      if (sliderStates[idx] < 0) sliderStates[idx] = slides - 1;
+      if (sliderStates[idx] >= slides) sliderStates[idx] = 0;
+      
+      slider.style.transform = `translateX(-${sliderStates[idx] * 100}%)`;
+      updateDots(idx, sliderStates[idx]);
+    }
+    
+    function goToSlide(idx, slideIndex) {
+      const slider = document.getElementById('slider-' + idx);
+      if (!slider) return;
+      
+      sliderStates[idx] = slideIndex;
+      slider.style.transform = `translateX(-${slideIndex * 100}%)`;
+      updateDots(idx, slideIndex);
+    }
+  </script>
+{% endblock %} 

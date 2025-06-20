@@ -1,0 +1,338 @@
+{% extends 'base.html' %}
+{% block content %}
+  <h2>{{ gallery_user.username }} kullanıcısının yükledikleri</h2>
+  <div class="gallery-grid">
+    {% for item in media %}
+      <div class="media-card">
+        <div class="media-thumb" data-url="{{ item.file.url }}" data-title="{{ item.title }}" data-type="{{ item.media_type }}">
+          {% if item.media_type == 'image' %}
+            <img src="{{ item.file.url }}" alt="{{ item.title }}" loading="lazy" />
+          {% elif item.media_type == 'video' %}
+            <video controls>
+              <source src="{{ item.file.url }}" type="video/mp4">
+              Tarayıcınız video etiketini desteklemiyor.
+            </video>
+          {% endif %}
+        </div>
+        <div class="media-info">
+          <div class="media-title">{{ item.title }}</div>
+          <div class="media-meta">{{ item.uploaded_at|date:'d.m.Y H:i' }}</div>
+        </div>
+      </div>
+    {% empty %}
+      <div class="no-media">Bu kullanıcı henüz medya yüklememiş.</div>
+    {% endfor %}
+  </div>
+
+  <!-- Modal -->
+  <div id="mediaModal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeModal()">&times;</span>
+      <div class="modal-media-container">
+        <img id="modalImage" src="" alt="" style="display: none; max-width: 100%; max-height: 80vh; object-fit: contain;" />
+        <video id="modalVideo" controls style="display: none; max-width: 100%; max-height: 80vh;">
+          <source src="" type="video/mp4">
+          Tarayıcınız video etiketini desteklemiyor.
+        </video>
+      </div>
+      <div class="modal-title" id="modalTitle"></div>
+    </div>
+  </div>
+
+  <!-- Sayfalama Navigasyonu -->
+  {% if page_obj.has_other_pages %}
+    <div class="pagination">
+      {% if page_obj.has_previous %}
+        <a href="?page=1" class="page-link">« İlk</a>
+        <a href="?page={{ page_obj.previous_page_number }}" class="page-link">‹ Önceki</a>
+      {% endif %}
+
+      <span class="page-info">
+        Sayfa {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
+      </span>
+
+      {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}" class="page-link">Sonraki ›</a>
+        <a href="?page={{ page_obj.paginator.num_pages }}" class="page-link">Son »</a>
+      {% endif %}
+    </div>
+  {% endif %}
+
+  <style>
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 28px;
+      margin-top: 32px;
+    }
+    .media-card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 12px #e0cfc7;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      min-height: 340px;
+      transition: transform 0.2s;
+    }
+    .media-card:hover {
+      transform: translateY(-4px);
+    }
+    .media-thumb {
+      width: 100%;
+      height: 200px;
+      background: #f3f3f3;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    .media-thumb:hover {
+      opacity: 0.8;
+    }
+    .media-thumb img, .media-thumb video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .media-info {
+      padding: 16px 18px 12px 18px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+    }
+    .media-title {
+      font-size: 1.1em;
+      font-weight: bold;
+      color: #14532d;
+      margin-bottom: 6px;
+      word-break: break-word;
+    }
+    .media-meta {
+      font-size: 0.97em;
+      color: #666;
+    }
+    .no-media {
+      grid-column: 1/-1;
+      text-align: center;
+      color: #888;
+      font-size: 1.1em;
+      margin-top: 40px;
+    }
+    
+    /* Modal Stilleri */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.9);
+      backdrop-filter: blur(5px);
+    }
+    
+    .modal-content {
+      position: relative;
+      margin: auto;
+      padding: 20px;
+      width: 90%;
+      max-width: 800px;
+      height: 90%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .close {
+      position: absolute;
+      top: 15px;
+      right: 35px;
+      color: #f1f1f1;
+      font-size: 40px;
+      font-weight: bold;
+      cursor: pointer;
+      z-index: 1001;
+      transition: color 0.3s;
+    }
+    
+    .close:hover {
+      color: #bbb;
+    }
+    
+    .modal-media-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      height: 100%;
+    }
+    
+    .modal-title {
+      color: white;
+      font-size: 1.2em;
+      font-weight: bold;
+      text-align: center;
+      margin-top: 20px;
+      padding: 10px;
+      background: rgba(0,0,0,0.7);
+      border-radius: 8px;
+    }
+    
+    /* Sayfalama Stilleri */
+    .pagination {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 12px;
+      margin-top: 40px;
+      padding: 20px;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 12px #e0cfc7;
+    }
+    .page-link {
+      padding: 8px 16px;
+      background: var(--main-green);
+      color: white;
+      text-decoration: none;
+      border-radius: 6px;
+      font-weight: 500;
+      transition: opacity 0.2s;
+    }
+    .page-link:hover {
+      opacity: 0.8;
+      color: white;
+      text-decoration: none;
+    }
+    .page-info {
+      padding: 8px 16px;
+      background: #f8f8f8;
+      border-radius: 6px;
+      font-weight: 500;
+      color: #666;
+    }
+    
+    /* Mobil uyumluluk */
+    @media (max-width: 768px) {
+      .modal-content {
+        width: 95%;
+        height: 95%;
+        padding: 10px;
+      }
+      .close {
+        top: 10px;
+        right: 20px;
+        font-size: 30px;
+      }
+      .modal-title {
+        font-size: 1em;
+        margin-top: 10px;
+      }
+    }
+  </style>
+
+  <script>
+    // Sayfa yüklendiğinde event listener'ları ekle
+    document.addEventListener('DOMContentLoaded', function() {
+      console.log('DOM yüklendi, event listener\'lar ekleniyor...');
+      
+      // Tüm media-thumb elementlerine click event listener ekle
+      const mediaThumbs = document.querySelectorAll('.media-thumb');
+      console.log('Bulunan media-thumb sayısı:', mediaThumbs.length);
+      
+      mediaThumbs.forEach(function(thumb) {
+        thumb.addEventListener('click', function() {
+          const fileUrl = this.getAttribute('data-url');
+          const title = this.getAttribute('data-title');
+          const mediaType = this.getAttribute('data-type');
+          
+          console.log('Tıklama algılandı:', {fileUrl, title, mediaType});
+          openModal(fileUrl, title, mediaType);
+        });
+      });
+    });
+
+    function openModal(fileUrl, title, mediaType) {
+      console.log('openModal çağrıldı:', {fileUrl, title, mediaType});
+      
+      const modal = document.getElementById('mediaModal');
+      const modalImage = document.getElementById('modalImage');
+      const modalVideo = document.getElementById('modalVideo');
+      const modalTitle = document.getElementById('modalTitle');
+      
+      if (!modal || !modalImage || !modalVideo || !modalTitle) {
+        console.error('Modal elementleri bulunamadı!');
+        return;
+      }
+      
+      // Başlığı ayarla
+      modalTitle.textContent = title;
+      
+      // Medya tipine göre içeriği göster
+      if (mediaType === 'image') {
+        modalImage.src = fileUrl;
+        modalImage.style.display = 'block';
+        modalVideo.style.display = 'none';
+        console.log('Resim modal\'da gösteriliyor');
+      } else if (mediaType === 'video') {
+        modalVideo.src = fileUrl;
+        modalVideo.style.display = 'block';
+        modalImage.style.display = 'none';
+        console.log('Video modal\'da gösteriliyor');
+      }
+      
+      // Modal'ı göster
+      modal.style.display = 'block';
+      console.log('Modal gösterildi');
+      
+      // Body scroll'unu engelle
+      document.body.style.overflow = 'hidden';
+    }
+    
+    function closeModal() {
+      console.log('closeModal çağrıldı');
+      
+      const modal = document.getElementById('mediaModal');
+      const modalImage = document.getElementById('modalImage');
+      const modalVideo = document.getElementById('modalVideo');
+      
+      if (!modal) {
+        console.error('Modal elementi bulunamadı!');
+        return;
+      }
+      
+      // Modal'ı gizle
+      modal.style.display = 'none';
+      
+      // Medya kaynaklarını temizle
+      if (modalImage) modalImage.src = '';
+      if (modalVideo) modalVideo.src = '';
+      
+      // Body scroll'unu geri aç
+      document.body.style.overflow = 'auto';
+      console.log('Modal kapatıldı');
+    }
+    
+    // Modal dışına tıklandığında kapat
+    window.onclick = function(event) {
+      const modal = document.getElementById('mediaModal');
+      if (event.target === modal) {
+        closeModal();
+      }
+    }
+    
+    // ESC tuşu ile kapat
+    document.addEventListener('keydown', function(event) {
+      if (event.key === 'Escape') {
+        closeModal();
+      }
+    });
+  </script>
+{% endblock %} 

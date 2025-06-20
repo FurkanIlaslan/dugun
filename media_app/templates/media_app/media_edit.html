@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+{% block content %}
+  <div class="edit-container">
+    <h2>Medya Düzenle</h2>
+    <form method="post" enctype="multipart/form-data" class="edit-form">
+      {% csrf_token %}
+      {% if form.errors and request.method == 'POST' %}
+        <div class="alert">
+          <ul>
+            {% for field in form %}
+              {% for error in field.errors %}
+                <li>{{ field.label }}: {{ error }}</li>
+              {% endfor %}
+            {% endfor %}
+            {% for error in form.non_field_errors %}
+              <li>{{ error }}</li>
+            {% endfor %}
+          </ul>
+        </div>
+      {% endif %}
+      <div class="form-group">
+        {{ form.title.label_tag }}
+        {{ form.title }}
+      </div>
+      <div class="form-group">
+        {{ form.media_type.label_tag }}
+        {{ form.media_type }}
+      </div>
+      <div class="form-group">
+        <label for="id_file">Fotoğraf / Video</label>
+        <input type="file" id="id_file" name="file">
+        {% if media.file %}
+          <div style="margin-top:8px;">
+            <span style="font-size:0.97em; color:#666;">Mevcut dosya:</span><br>
+            {% if media.media_type == 'image' %}
+              <img src="{{ media.file.url }}" alt="{{ media.title }}" style="max-width:120px; max-height:80px; border-radius:6px; margin-top:4px;" />
+            {% elif media.media_type == 'video' %}
+              <video src="{{ media.file.url }}" style="max-width:120px; max-height:80px; border-radius:6px; margin-top:4px;" controls></video>
+            {% endif %}
+          </div>
+          <small style="color:#666; font-size:0.97em;">Yeni dosya seçmezsen mevcut dosya korunur.</small>
+        {% endif %}
+      </div>
+      <button type="submit">Kaydet</button>
+      <a href="{% url 'gallery' %}" class="cancel-link">İptal</a>
+    </form>
+  </div>
+  <style>
+    .edit-container { max-width: 400px; margin: 40px auto; background: #fff; padding: 32px 28px 22px 28px; border-radius: 10px; box-shadow: 0 2px 16px #e0cfc7; }
+    .edit-container h2 { text-align: center; margin-bottom: 24px; }
+    .edit-form .form-group { margin-bottom: 18px; }
+    .edit-form label { display: block; margin-bottom: 6px; color: #111; font-weight: bold; }
+    .edit-form input, .edit-form select { width: 100%; padding: 10px; border: 1px solid #e0cfc7; border-radius: 5px; font-size: 16px; color: #111; background: #fff; }
+    .edit-form button { width: 100%; margin-top: 10px; }
+    .alert { background: #ffeaea; color: #b04848; border: 1px solid #f5c2c2; border-radius: 6px; padding: 10px 16px; margin-bottom: 18px; }
+    .alert ul { margin: 0; padding-left: 18px; }
+    .cancel-link { display: inline-block; margin-top: 12px; color: #888; text-align: center; width: 100%; text-decoration: underline; }
+  </style>
+{% endblock %} 
