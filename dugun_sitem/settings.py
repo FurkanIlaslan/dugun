@@ -24,8 +24,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-@idgmyvcf^xh%#-$7%v!_dy8ln8kcx-9ixfu&z=p!(bdx!#(*4'
 
 # Geliştirme ortamı için:
-DEBUG = True
-ALLOWED_HOSTS = []
+DEBUG = False
+ALLOWED_HOSTS = ['furkanilaslan.pythonanywhere.com']
 
 
 # Application definition
@@ -118,7 +118,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
 STATIC_URL = '/static/'
-STATICFILES_DIRS = [os.path.join(BASE_DIR / 'static')]
+STATICFILES_DIRS = [os.path.join(BASE_DIR , 'static')]
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 # Medya dosyaları ayarları
